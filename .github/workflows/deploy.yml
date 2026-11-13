@@ -1,7 +1,9 @@
-name: Go CI/CD
+name: GitHub Flow CI/CD
 
 on:
   push:
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 permissions:
@@ -15,16 +17,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Run Go tests in Docker
+        run: docker run --rm -v "$PWD":/app -w /app golang:1.22-alpine go test -v ./...
+
       - name: Build Docker image
+        if: github.ref == 'refs/heads/main'
         run: docker build -t ghcr.io/${{ github.repository }}:latest .
 
       - name: Login to GitHub Container Registry
+        if: github.ref == 'refs/heads/main'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push image
+        if: github.ref == 'refs/heads/main'
         run: docker push ghcr.io/${{ github.repository }}:latest
 
       - name: Deploy container
+        if: github.ref == 'refs/heads/main'
         run: |
           docker stop my-app || true
           docker rm my-app || true
