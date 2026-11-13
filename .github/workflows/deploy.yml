@@ -38,3 +38,21 @@ jobs:
           docker stop my-app || true
           docker rm my-app || true
           docker run -d --name my-app -p 8080:8080 ghcr.io/${{ github.repository }}:latest
+      - name: Build Docker image
+        if: github.ref == 'refs/heads/main'
+        run: docker build -t ghcr.io/${{ github.repository }}:latest .
+
+      - name: Login to GitHub Container Registry
+        if: github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image
+        if: github.ref == 'refs/heads/main'
+        run: docker push ghcr.io/${{ github.repository }}:latest
+
+      - name: Deploy container
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker stop my-app || true
+          docker rm my-app || true
+          docker run -d --name my-app -p 8080:8080 ghcr.io/${{ github.repository }}:latest
